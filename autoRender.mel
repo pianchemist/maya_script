@@ -1,0 +1,110 @@
+// --- mel script --- //
+
+// duplicate variable warnings do not find out //
+melOptions -duplicateVariableWarnings 0; // 0: not find out , 1: find out (default) //
+
+// user setting //
+string $fileName = "cap1_gray";
+
+// auto setting //
+string $imageName = $fileName;
+progressWindow -isInterruptable true -title $fileName;
+
+// initialization //
+int $angle_x = 0;
+int $angle_y = 0;
+int $angle_z = 0;
+int $angle_add_x = 15;
+int $angle_add_y = 15;
+string $outputImagePath = ("C:/Users/nori3.nori3-PC/Desktop/" + $fileName +"/" + $imageName + "_");
+
+// file re-setting //
+sysFile -delete ("C:/Users/nori3.nori3-PC/Desktop/" + $fileName);
+sysFile -makeDir ("C:/Users/nori3.nori3-PC/Desktop/" + $fileName);
+
+// camera setting //
+string $cameraNode[] = `camera`;
+string $cameraName = $cameraNode[0];
+string $cameraShape = $cameraNode[1];
+setAttr ($cameraShape + ".backgroundColor") -type double3 1 1 1;
+scale -r 1.8 1.8 1 $cameraName;
+move -r 0 0 2 $cameraName;
+move -rpr 0 0 0 ($cameraName + ".scalePivot") ($cameraName + ".rotatePivot");
+rotate -r -os -fo 0 180 0 $cameraName;
+
+// Restore the option to its original value. //
+melOptions -duplicateVariableWarnings 1;
+
+// initialization //
+$angle_x = 0;
+$angle_y = 0;
+
+// rendering setting //
+setCurrentRenderer "mayaSoftware"; // renderer //
+setAttr "defaultRenderQuality.edgeAntiAliasing" 0; // 0: Highest quality by getAttr // 
+setAttr "defaultResolution.pixelAspect" 1; // aspect ratio is 1 setted//
+setAttr defaultRenderGlobals.imageFormat 8; // 8: jpg by reference document //
+setAttr defaultResolution.width 400; // pixel width //
+setAttr defaultResolution.height 400; // pixel height //
+
+// rendering //
+// angle_x = 0 //
+for($angle_y ; $angle_y < 360 ; $angle_y = $angle_y + $angle_add_y ){
+    rotate -a -os $angle_x $angle_y 0 $cameraName;
+    renderWindowRenderCamera render renderView $cameraName;
+    renderWindowEditor -edit -writeImage ($outputImagePath + "x" + $angle_x + "_" + "y" + $angle_y) "renderView";
+    if ( `progressWindow -query -isCancelled` ) break;
+    
+    pause -seconds 1;   
+}
+
+// initialization //
+$angle_x += $angle_add_x;
+$angle_y = 0;
+
+// 0 < angle_x < 90 //
+for($angle_x ; $angle_x < 90 ; $angle_x = $angle_x + $angle_add_x){
+    for($angle_y ; $angle_y < 360 ; $angle_y = $angle_y + $angle_add_y ){
+        rotate -a -os $angle_x $angle_y 0 $cameraName;
+        renderWindowRenderCamera render renderView $cameraName;
+        renderWindowEditor -edit -writeImage ($outputImagePath + "x" + $angle_x + "_" + "y" + $angle_y) "renderView";
+        if ( `progressWindow -query -isCancelled` ) break;
+        
+        pause -seconds 1;
+    }
+    $angle_y = 0; // initialization //
+    if ( `progressWindow -query -isCancelled` ) break;
+}
+
+// angle_x = 90 //
+rotate -a -os $angle_x $angle_y 0 $cameraName;
+renderWindowRenderCamera render renderView $cameraName;
+renderWindowEditor -edit -writeImage ($outputImagePath + "x" + $angle_x) "renderView";
+
+// initialization //
+$angle_x = 0;
+$angle_x = 0 - $angle_add_x;
+$angle_y = 0;
+
+for($angle_x ; $angle_x > -90 ; $angle_x = $angle_x - $angle_add_x){
+    for($angle_y ; $angle_y < 360 ; $angle_y = $angle_y + $angle_add_y ){
+        rotate -a -os $angle_x $angle_y 0 $cameraName;
+        renderWindowRenderCamera render renderView camera1;
+        renderWindowEditor -edit -writeImage ($outputImagePath + "x" + $angle_x + "_" + "y" + $angle_y) "renderView";
+        if ( `progressWindow -query -isCancelled` ) break;
+        
+        pause -seconds 1;
+    }
+    $angle_y = 0; // initialization //
+    if ( `progressWindow -query -isCancelled` ) break;
+}
+
+// angle_x = -90 //
+rotate -a -os $angle_x $angle_y 0 $cameraName;
+renderWindowRenderCamera render renderView $cameraName;
+renderWindowEditor -edit -writeImage ($outputImagePath + "x" +$angle_x) "renderView";
+
+// finish //
+progressWindow -endProgress;
+Delete $cameraName;
+
